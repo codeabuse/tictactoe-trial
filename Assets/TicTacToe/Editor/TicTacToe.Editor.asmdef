@@ -1,0 +1,18 @@
+{
+    "name": "TicTacToe.Editor",
+    "rootNamespace": "TicTacToe",
+    "references": [
+        "GUID:11eb8deb98560ff45a05edd2f2b523eb"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
