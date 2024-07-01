@@ -1,4 +1,4 @@
-﻿namespace TicTacToe.Runtime.Gameplay.GameModes
+﻿namespace TicTacToe.Gameplay.GameModes
 {
     public interface IGameMode
     {

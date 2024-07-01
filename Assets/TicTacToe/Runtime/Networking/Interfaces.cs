@@ -1,4 +1,5 @@
 ﻿using Cysharp.Threading.Tasks;
+using TicTacToe.Gameplay;
 
 namespace TicTacToe.Networking
 {
@@ -14,6 +15,6 @@ namespace TicTacToe.Networking
 
     public interface IPlayerMoveResponse
     {
-        UniTask<ServerResponse> GetResponse();
+        UniTask<ITurnResult> GetResponse();
     }
 }

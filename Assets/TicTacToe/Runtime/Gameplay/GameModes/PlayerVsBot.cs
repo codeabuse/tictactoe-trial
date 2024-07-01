@@ -1,8 +1,8 @@
 ﻿using TicTacToe.Players;
-using TicTacToe.Runtime.UI;
+using TicTacToe.UI;
 using UnityEngine;
 
-namespace TicTacToe.Runtime.Gameplay.GameModes
+namespace TicTacToe.Gameplay.GameModes
 {
     public class PlayerVsBot : MonoBehaviour, IGameMode
     {
@@ -23,10 +23,10 @@ namespace TicTacToe.Runtime.Gameplay.GameModes
             return new []
             {
                     new PlayerEntity(humanPlayerName, _avatars[0], 0,
-                            new HumanPlayerController(humanPlayerName, _boardController, _popupController)),
+                            new HumanPlayer(humanPlayerName, 0, _boardController, _popupController)),
                     
                     new PlayerEntity(botPlayerName,_avatars[1], 1,
-                            new BotPlayer(_boardController.Model, _boardController.Rules, 1, 0))
+                            new BotPlayer(_boardController, 1, 0))
             };
         }
 
