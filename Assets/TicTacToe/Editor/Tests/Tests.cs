@@ -3,7 +3,6 @@ using TicTacToe;
 using TicTacToe.Gameplay;
 using TicTacToe.Model;
 using TicTacToe.Model.Test;
-using TicTacToe.Runtime.Gameplay;
 using TicTacToe.StaticData;
 using UnityEngine;
 using UnityEngine.Pool;
@@ -17,7 +16,7 @@ public class Tests
     public void PrepareBoard()
     {
         _rules = DefaultSettings.DefaultRules;
-        _board = new Board(_rules.BoardDimensions);
+        _board = new Board(_rules);
     }
 
     [OneTimeTearDown]
@@ -72,20 +71,20 @@ public class Tests
     [Test]
     public void WinConditions()
     {
-        foreach (var (board, startPosition, winningFigure) in TestBoardArrangements.figurePlacements)
+        for (var i = 0; i < TestBoardArrangements.figurePlacements.Length; i++)
         {
+            var (board, startPosition, winningFigure) = TestBoardArrangements.figurePlacements[i];
             _board.Clear();
             TestBoardArrangements.SetupFigures(_board.Cells, board);
-            var result = _board.CheckWinConditions(startPosition);
-            result.Map(
-                    state =>
-                    {
-                        Assert.AreEqual(GameState.GameOver, state);
-                        _board[startPosition].Map(
-                                cell => Assert.AreEqual(winningFigure, cell.FigureId),
-                                Assert.Fail);
-                    },
-                    Assert.Fail);
+            if (_board.CheckWinConditions(startPosition, out var winningLine))
+            {
+                var winnerCell = _board.Cells[winningLine.Start];
+                Assert.AreEqual(winningFigure, winnerCell.FigureId);
+            }
+            else
+            {
+                Assert.Fail($"Board arrangement {i}: player {winningFigure} win expected");
+            }
         }
     }
 }

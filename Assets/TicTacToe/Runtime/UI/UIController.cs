@@ -1,6 +1,6 @@
 ﻿using System;
-using TicTacToe.Runtime.Gameplay;
-using TicTacToe.Runtime.UI;
+using TicTacToe.Gameplay;
+using TicTacToe.UI;
 using TMPro;
 using UnityEngine;
 
@@ -25,6 +25,10 @@ namespace TicTacToe
             _board.ActivePlayerChanged += OnActivePlayerChanged;
             _board.TurnTimer.OnReset += OnTimeChanged;
             _board.TurnTimer.OnTick += OnTimeChanged;
+            foreach (var playerDisplay in _playerDisplays)
+            {
+                playerDisplay.HideTurnMarker();
+            }
         }
 
         private void OnTimeChanged(TimeSpan time)
@@ -34,18 +38,26 @@ namespace TicTacToe
 
         private void OnActivePlayerChanged(int playerIndex)
         {
-            var inactivePlayer = playerIndex + 1 % 2;
+            var inactivePlayer = (playerIndex + 1) % 2;
             _playerDisplays[playerIndex].ShowTurnMarker();
             _playerDisplays[inactivePlayer].HideTurnMarker();
         }
 
-        public void SetupPlayers(PlayerEntity[] players)
+        public void ShowPlayers(PlayerEntity[] players)
         {
             for (var i = 0; i < players.Length; i++)
             {
                 var playerDisplay = _playerDisplays[i];
                 var playerEntity = players[i];
-                playerDisplay.SetAvatar(playerEntity.Avatar);
+                playerDisplay.SetPlayer(playerEntity);
+            }
+        }
+
+        public void HideActivePlayerMark()
+        {
+            foreach (var playerDisplay in _playerDisplays)
+            {
+                playerDisplay.HideTurnMarker();
             }
         }
     }

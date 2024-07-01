@@ -1,6 +1,6 @@
 {
     "name": "TicTacToe.Editor",
-    "rootNamespace": "TicTacToe",
+    "rootNamespace": "",
     "references": [
         "GUID:11eb8deb98560ff45a05edd2f2b523eb"
     ],

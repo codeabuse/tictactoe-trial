@@ -1,5 +1,5 @@
 using System;
-using TicTacToe.Runtime.Gameplay;
+using TicTacToe.Gameplay;
 using TicTacToe.StaticData;
 using UnityEngine;
 using UObject = UnityEngine.Object;
@@ -32,10 +32,10 @@ namespace TicTacToe
         [ContextMenu("Generate")]
         public CellViewController[] Generate()
         {
-            return Generate(_width, _height, null);
+            return Generate(_width, _height);
         }
         
-        public CellViewController[] Generate(int width, int height, Func<Vector2Int, Cell> getCellModel)
+        public CellViewController[] Generate(int width, int height)
         {
             Clear();
             
@@ -54,8 +54,7 @@ namespace TicTacToe
                     var position = rootPosition + new Vector3(w * spacing, h * spacing) - centerOffset;
                     var cellInstance = Instantiate(cellViewPrefab, position, Quaternion.identity, _gridRoot);
                     _cells[h * _width + w] = cellInstance;
-                    if (getCellModel is {})
-                        cellInstance.Initialize(getCellModel(new(w, _height - h - 1)));
+                    cellInstance.Position = new(w, h);
                 }
             }
 

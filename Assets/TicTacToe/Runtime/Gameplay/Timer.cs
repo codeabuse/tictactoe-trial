@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 namespace TicTacToe.Gameplay
@@ -15,34 +15,45 @@ namespace TicTacToe.Gameplay
         private readonly TimeSpan _tickDuration;
         private TimeSpan _remainingTime;
 
+        private CancellationTokenSource _cancellation;
+
         public Timer(TimeSpan duration, uint tickDurationMiliseconds)
         {
             _duration = duration;
             _tickDuration = TimeSpan.FromMilliseconds(tickDurationMiliseconds);
         }
         
-        public async UniTask StartCountdown(CancellationToken ct)
+        public UniTask StartCountdown(CancellationToken ct)
         {
-            var stopWatch = new Stopwatch();
-            var nextTick = _duration;
-            while (!ct.IsCancellationRequested && _remainingTime < _duration)
+            _cancellation = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            return TimerRoutine(_cancellation.Token);
+        }
+
+        private async UniTask TimerRoutine(CancellationToken ct)
+        {
+            var nextTick = _tickDuration;
+            var lastTick = 0;
+            while (!ct.IsCancellationRequested && _remainingTime > TimeSpan.FromMilliseconds(0))
             {
-                stopWatch.Restart();
-                await UniTask.Delay(nextTick, cancellationToken: ct);
-                stopWatch.Stop();
-                var lastTick = (int)stopWatch.ElapsedMilliseconds;
+                var timeStart = Time.time;
+                await UniTask.Delay(_tickDuration, cancellationToken: ct);
+                lastTick = (int)((Time.time - timeStart) * 1000);
                 _remainingTime -= TimeSpan.FromMilliseconds(lastTick);
-                var durationMilliseconds = _duration.Milliseconds;
+                var durationMilliseconds = _duration.TotalMilliseconds;
                 
                 if (lastTick > durationMilliseconds)
                 {
-                    nextTick = TimeSpan.FromMilliseconds(
-                            durationMilliseconds - _remainingTime.Milliseconds % durationMilliseconds);
+                    nextTick = TimeSpan.FromMilliseconds(durationMilliseconds + durationMilliseconds - lastTick);
                 }
                 
-                Debug.Log($"Remaining: {_remainingTime.TotalMilliseconds}, Last tick: {lastTick}, Next tick: {nextTick}");
+                //Debug.Log($"Remaining: {_remainingTime.TotalMilliseconds}, Last tick: {lastTick}, Next tick: {nextTick.TotalMilliseconds}");
                 OnTick?.Invoke(_remainingTime);
             }
+        }
+
+        public void StopCountodwn()
+        {
+            _cancellation?.Cancel();
         }
 
         public void Reset()

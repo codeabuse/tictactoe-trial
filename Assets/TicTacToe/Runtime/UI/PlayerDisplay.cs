@@ -1,8 +1,9 @@
-﻿using TMPro;
+﻿using TicTacToe.Gameplay;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace TicTacToe.Runtime.UI
+namespace TicTacToe.UI
 {
     public class PlayerDisplay : MonoBehaviour
     {
@@ -22,9 +23,11 @@ namespace TicTacToe.Runtime.UI
             _initialAlpha = _turnMarker.color.a;
         }
 
-        public void SetName(string name) => _name.text = name;
-        
-        public void SetAvatar(Sprite sprite) => _avatar.sprite = sprite;
+        public void SetPlayer(PlayerEntity playerEntity)
+        {
+            _name.text = playerEntity.Name;
+            _avatar.sprite = playerEntity.Avatar;
+        }
 
         public void ShowTurnMarker()
         {

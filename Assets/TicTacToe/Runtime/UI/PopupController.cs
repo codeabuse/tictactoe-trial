@@ -1,17 +1,16 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using Cysharp.Threading.Tasks.Triggers;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
 
-namespace TicTacToe.Runtime.UI
+namespace TicTacToe.UI
 {
     public class PopupController : MonoBehaviour
     {
-        [FormerlySerializedAs("_popupRoot")]
         [SerializeField]
         private RectTransform _messageBox;
 
@@ -44,6 +43,11 @@ namespace TicTacToe.Runtime.UI
 
         public async UniTask ShowAndWaitResponse(string message, string buttonText, CancellationToken ct)
         {
+            await ShowAndWaitResponse(message, buttonText, null, ct);
+        }
+        
+        public async UniTask ShowAndWaitResponse(string message, string buttonText, Action callback, CancellationToken ct)
+        {
             _message.text = message;
             _buttonText.text = buttonText;
             var visiblePosition = _popupVisibleTarget.position;
@@ -52,7 +56,8 @@ namespace TicTacToe.Runtime.UI
             await _button.GetAsyncPointerClickTrigger().OnPointerClickAsync(ct);
             
             var hiddenPosition = _popupHiddenTarget.position;
-            await _messageBox.DOMove(hiddenPosition, _showTime).SetEase(_hideEase).ToUniTask(cancellationToken: ct);
+            _messageBox.DOMove(hiddenPosition, _hideTime).SetEase(_hideEase).ToUniTask(cancellationToken: ct);
+            callback?.Invoke();
         }
     }
 }

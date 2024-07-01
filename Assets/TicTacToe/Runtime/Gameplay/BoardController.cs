@@ -1,15 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using TicTacToe.Gameplay;
+using DG.Tweening;
 using TicTacToe.Model;
-using TicTacToe.StaticData;
+using TicTacToe.Networking;
 using TicTacToe.Structures;
 using UnityEngine;
-using Timer = TicTacToe.Gameplay.Timer;
 
-namespace TicTacToe.Runtime.Gameplay
+namespace TicTacToe.Gameplay
 {
     public class BoardController : MonoBehaviour
     {
@@ -17,19 +17,28 @@ namespace TicTacToe.Runtime.Gameplay
         
         private static readonly string InvalidPlayersCountError = "Invalid players count";
         private static readonly string PlayerWithIndexIsNullError = "Player with index {0} is null";
-        //private static readonly Result<PlayerEntity, string> GameNotFinishedError ="Game is not finished yet";
         
         public event Action<int> ActivePlayerChanged; 
 
         [SerializeField]
         private GridGenerator _gridGenerator;
+        [SerializeField]
+        private Sprite[] _figures;
+        [SerializeField]
+        private float _winLineAnimationDuration = 1.5f;
+        [SerializeField]
+        private float _afterWinLineDelay = 2f;
+
+        private LineRenderer _lineRenderer;
         
         private Board _boardModel;
         private CellViewController[] _cells;
         private PlayerEntity[] _players;
         private Timer _turnTimer;
-        private int _currentPlayerId;
+        private int _currentPlayerId = -1;
         private RuleSet _rules;
+
+        private Dictionary<Vector2Int, CellViewController> _cellsMap;
 
         public CellViewController[] Cells => _cells;
 
@@ -37,6 +46,11 @@ namespace TicTacToe.Runtime.Gameplay
         public Board Model => _boardModel;
 
         public RuleSet Rules => _rules;
+
+        private void Awake()
+        {
+            _lineRenderer = GetComponent<LineRenderer>();
+        }
 
         public ResultVoid<string> SetupGame(PlayerEntity[] players, RuleSet rules)
         {
@@ -57,12 +71,17 @@ namespace TicTacToe.Runtime.Gameplay
 
             _players = players;
             _turnTimer = new Timer(rules.TurnTime, tick_duration_miliseconds);
-            _boardModel = new Board(rules.BoardDimensions);
+            _boardModel = new Board(rules);
             _cells = _gridGenerator.Generate(
                     rules.BoardDimensions.x, 
-                    rules.BoardDimensions.y, 
-                    position => _boardModel.Cells[position]);
-
+                    rules.BoardDimensions.y);
+            _cellsMap = _cells.ToDictionary(c => c.Position);
+            
+            foreach (var cellViewController in _cells)
+            {
+                cellViewController.Initialize(_boardModel.Cells[cellViewController.Position], _figures);
+            }
+            
             return ResultVoid<string>.Success;
         }
 
@@ -71,25 +90,23 @@ namespace TicTacToe.Runtime.Gameplay
             TurnTimer.Reset();
             var currentPlayer = NextPlayer();
             ActivePlayerChanged?.Invoke(_currentPlayerId);
-            var playerTurnTask = currentPlayer.WaitForTurn(ct);
-            var timerTask = TurnTimer.StartCountdown(ct);
-            
-            var (playerTurnFinished, position) = await UniTask.WhenAny(
-                    playerTurnTask, 
-                    timerTask);
+            var turnResult = await currentPlayer.WaitForTurn(ct);
 
-            return playerTurnFinished ? 
-                    _boardModel.CheckWinConditions(position) : 
-                    GameState.TimeOut;
+            var gameState = turnResult.Evaluate(_boardModel);
+            if (gameState is GameState.GameOver)
+            {
+                await ShowWinningLine(ct);
+            }
+            return gameState;
         }
 
         private PlayerEntity NextPlayer()
         {
-            _currentPlayerId = _players.Length % ++_currentPlayerId;
+            _currentPlayerId = ++_currentPlayerId % _players.Length;
             return _players[_currentPlayerId];
         }
 
-        public async UniTask<Vector2Int> WaitUserClicksEmptyCell(CancellationToken ct)
+        public async UniTask<PlayerMove> WaitUserClicksEmptyCell(CancellationToken ct)
         {
             var waitCellClickedCancellation = CancellationTokenSource.CreateLinkedTokenSource(ct);
             
@@ -99,8 +116,56 @@ namespace TicTacToe.Runtime.Gameplay
                            .SuppressCancellationThrow());
             
             var (_, (_, result)) = await UniTask.WhenAny(waitEmptyCellClickedTasks);
+            var cell = result.Model;
             waitCellClickedCancellation.Cancel();
-            return result.Model.Position;
+
+            return new PlayerMove(_currentPlayerId, cell.Position);
+        }
+
+        public PlayerEntity GetCurrentPlayer()
+        {
+            return _players[_currentPlayerId];
+        }
+
+        public PlayerEntity GetNextPlayer()
+        {
+            return _players[(_currentPlayerId + 1) % 2];
+        }
+
+        public void Reset()
+        {
+            _currentPlayerId = -1;
+            _lineRenderer.positionCount = 0;
+            _boardModel.Clear();
+        }
+        
+        private static readonly Vector3 zOffset = Vector3.back;
+
+        private async UniTask ShowWinningLine(CancellationToken ct)
+        {
+            var winningLine = _boardModel.WinningLine;
+
+            var start = _cellsMap[winningLine.Start].transform.position + zOffset;
+            var end = _cellsMap[winningLine.End].transform.position + zOffset;
+            var direction = (winningLine.Start - winningLine.End);
+            _lineRenderer.positionCount = 2;
+            _lineRenderer.SetPosition(0, start);
+            _lineRenderer.SetPosition(1, end);
+            
+            await DOTween.To(GetLineEnd, SetLineEnd, end, _winLineAnimationDuration)
+                   .ToUniTask(cancellationToken:ct);
+
+            Vector3 GetLineEnd() => _lineRenderer.GetPosition(1);
+            void SetLineEnd(Vector3 position) => _lineRenderer.SetPosition(1, position);
+        }
+
+        public void SwapPlayersTurns()
+        {
+            _currentPlayerId = _currentPlayerId++ % 2;
+            var (p1, p2) = (_players[0], _players[1]);
+            var (f1, f2) = (p2.FigureId, p1.FigureId);
+            p1.ChangeFigureId(f1);
+            p2.ChangeFigureId(f2);
         }
     }
 }

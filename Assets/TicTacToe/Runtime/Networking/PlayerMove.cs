@@ -1,4 +1,6 @@
-﻿namespace TicTacToe.Networking
+﻿using UnityEngine;
+
+namespace TicTacToe.Networking
 {
     public readonly struct PlayerMove
     {
@@ -6,11 +8,13 @@
         public readonly int CellX;
         public readonly int CellY;
 
-        public PlayerMove(int playerId, int cellX, int cellY)
+        public PlayerMove(int playerId, Vector2Int position)
         {
             PlayerId = playerId;
-            CellX = cellX;
-            CellY = cellY;
+            CellX = position.x;
+            CellY = position.y;
         }
+
+        public Vector2Int Position => new(CellX, CellY);
     }
 }

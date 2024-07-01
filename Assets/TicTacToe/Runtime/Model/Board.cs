@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using TicTacToe.Runtime.Gameplay;
-using TicTacToe.StaticData;
+using TicTacToe.Gameplay;
 using TicTacToe.Structures;
 using UnityEngine;
 
@@ -9,6 +8,7 @@ namespace TicTacToe.Model
 {
     public class Board
     {
+        private readonly RuleSet _rules;
         public const string OutOfBoundsError = "Position is out of board bounds";
         public const string EmptyCellWinCheckError = "Can't check winning conditions from empty cell!";
 
@@ -18,8 +18,12 @@ namespace TicTacToe.Model
         public int Width { get; }
         public int Height { get; }
 
-        public Board(Vector2Int dimensions)
+        public Line WinningLine { get; private set; }
+
+        public Board(RuleSet rules)
         {
+            _rules = rules;
+            var dimensions = rules.BoardDimensions;
             if (dimensions.x <= 0 || dimensions.y <= 0)
                 throw new ArgumentOutOfRangeException(nameof(dimensions),"Board dimensions must be greater than zero");
             
@@ -75,57 +79,63 @@ namespace TicTacToe.Model
             }
         }
 
-        public Result<GameState, string> CheckWinConditions(Vector2Int startFrom)
+        public bool CheckWinConditions(Vector2Int startFrom, out Line winningLine)
         {
+            winningLine = default;
             if (OutOfBounds(startFrom))
             {
-                return OutOfBoundsError;
+                return false;
             }
             
             var cell = _cells[startFrom];
             if (cell.IsEmpty)
             {
-                return EmptyCellWinCheckError;
+                return false;
             }
 
             var figureId = cell.FigureId;
             
-            
-            foreach (var line in BoardTools.Lines)
+            foreach (var lineDirection in BoardTools.LineDirections)
             {
-                var figuresOnLine = GetLineLenght(figureId, cell, line);
-                if (figuresOnLine == DefaultSettings.WinningLineLength)
-                    return GameState.GameOver;
+                var line = GetLineLenght(figureId, startFrom, lineDirection, false);
+                if (line.FiguresInLine == _rules.WinningLine)
+                {
+                    winningLine = line;
+                    return true;
+                }
             }
             
-            return GameState.WaitForNextTurn;
+            return false;
         }
 
-        public int GetLineLenght(int figureId, Cell cell, Vector2Int lineDirection)
+        public Line GetLineLenght(int figureId, Vector2Int start, Vector2Int lineDirection, bool excludeStartPoint)
         {
-            var startPosition = cell.Position;
-            var lineLength = GetLineLenghtInDirection(figureId, startPosition, lineDirection);
+            var startPosition = excludeStartPoint? start + lineDirection : start;
             
+            var lineForward = GetLineLenghtInDirection(figureId, startPosition, lineDirection);
             var oppositeDirtection = lineDirection * -1;
-            var nextStartCell = startPosition + oppositeDirtection;
-            
-            lineLength += GetLineLenghtInDirection(figureId, nextStartCell, oppositeDirtection);
-            
-            return lineLength;
+            var lineOpposite  = GetLineLenghtInDirection(figureId, start + oppositeDirtection, oppositeDirtection);
+
+            return new Line(
+                    lineForward.End, 
+                    lineOpposite.End, 
+                    lineForward.FiguresInLine + lineOpposite.FiguresInLine);
         }
 
-        private int GetLineLenghtInDirection(int figureId, Vector2Int startPosition, Vector2Int direction)
+        private Line GetLineLenghtInDirection(int figureId, Vector2Int startPosition, Vector2Int direction)
         {
-            var nextPosition = startPosition;
-            var figuresOnLine = 0;
-            
+            var currentPosition = startPosition;
+            var nextPosition = currentPosition;
+            var figuresInDirection = 0;
+
             while (FigureMatch(nextPosition, figureId))
             {
-                figuresOnLine++;
+                currentPosition = nextPosition;
+                figuresInDirection++;
                 nextPosition += direction;
             } 
 
-            return figuresOnLine;
+            return new (startPosition, currentPosition, figuresInDirection);
         }
 
         private bool OutOfBounds(Vector2Int position)
@@ -149,6 +159,11 @@ namespace TicTacToe.Model
             {
                 cell.Clear();
             }
+        }
+
+        public void SetWinningLine(Line winningLine)
+        {
+            WinningLine = winningLine;
         }
     }
 }

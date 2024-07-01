@@ -1,8 +1,8 @@
 ﻿using TicTacToe.Players;
-using TicTacToe.Runtime.UI;
+using TicTacToe.UI;
 using UnityEngine;
 
-namespace TicTacToe.Runtime.Gameplay.GameModes
+namespace TicTacToe.Gameplay.GameModes
 {
     public class PlayerVsPlayer: MonoBehaviour, IGameMode
     {
@@ -23,10 +23,10 @@ namespace TicTacToe.Runtime.Gameplay.GameModes
             return new []
             {
                     new PlayerEntity(player1name, _avatars[0], 0,
-                            new HumanPlayerController(player1name, _boardController, _popupController)),
+                            new HumanPlayer(player1name, 0, _boardController, _popupController)),
                     
                     new PlayerEntity(player2name,_avatars[1], 1,
-                            new HumanPlayerController(player2name, _boardController, _popupController))
+                            new HumanPlayer(player2name, 1, _boardController, _popupController))
             };
         }
     }

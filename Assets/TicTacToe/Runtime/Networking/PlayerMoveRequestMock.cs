@@ -4,7 +4,7 @@
     {
         public IPlayerMoveResponse Send(PlayerMove move)
         {
-            return new PlayerMoveResponseMock();
+            return new PlayerMoveResponseMock(move);
         }
     }
 }

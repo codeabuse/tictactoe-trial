@@ -4,7 +4,7 @@ namespace TicTacToe.Model
 {
     public static class BoardTools
     {
-        public static readonly Vector2Int[] Lines = new[]
+        public static readonly Vector2Int[] LineDirections = new[]
         { 
                 new Vector2Int(0, 1),
                 new Vector2Int(1, 1),
