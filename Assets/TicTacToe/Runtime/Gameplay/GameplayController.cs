@@ -159,6 +159,7 @@ namespace TicTacToe.Gameplay
         private void OnApplicationQuit()
         {
             _gameCancellation.Cancel();
+            NetworkSimulationLog.Close();
         }
 
         private static void ThrowError(string message) => throw new GameplayException(message);

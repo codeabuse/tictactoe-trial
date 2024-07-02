@@ -13,5 +13,10 @@
         {
             _log.AppendLine(action);
         }
+
+        public static void Close()
+        {
+            _log?.Close();
+        }
     }
 }
