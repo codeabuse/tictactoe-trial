@@ -14,7 +14,7 @@ namespace TicTacToe.Core
 
         private async void Start()
         {
-            GameClient.SetClientBackend(_clientConfiguration.GetClientBackend());
+            GameClient.ApplyConfiguration(_clientConfiguration);
             await SceneManager.LoadSceneAsync(_gameSceneIndex);
         }
     }

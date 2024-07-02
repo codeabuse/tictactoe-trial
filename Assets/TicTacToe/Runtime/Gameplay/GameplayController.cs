@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using TicTacToe.AsyncTools;
 using TicTacToe.Gameplay.GameModes;
+using TicTacToe.Networking;
 using TicTacToe.StaticData;
 using TicTacToe.UI;
 using UnityEngine;
@@ -14,7 +16,7 @@ namespace TicTacToe.Gameplay
         WaitForNextTurn,
         TimeOut,
         GameOver,
-        Tie,
+        Draw,
         Terminated
     }
 
@@ -41,8 +43,8 @@ namespace TicTacToe.Gameplay
             
             if (TryGetComponent<IGameMode>(out var gameMode))
             {
-                var players = gameMode.CreatePlayers();
-                InitializeBoard(players);
+                _players = gameMode.CreatePlayers();
+                InitializeBoard(_players);
                 _uiController.Initialize();
             }
             else
@@ -58,46 +60,52 @@ namespace TicTacToe.Gameplay
                     Begin,
                     Debug.LogError);
         }
-
+        
         private async void Begin()
         {
             _gameCancellation = new();
             var gameState = GameState.WaitForNextTurn;
+            var gameStartRequest = GameClient.CreateGameStartRequest().Send(_players);
+            var gameStartResponse = await gameStartRequest.GetResponse();
+            string popupMessage = default;
+            gameStartResponse.Map(() => { },
+                    e =>
+                    {
+                        gameState = GameState.Terminated;
+                        Debug.LogError(popupMessage = e.Message);
+                    });
             while (gameState is GameState.WaitForNextTurn)
             {
                 var isCancelled = false;
                 (isCancelled, gameState) = await GameplayCycle(_gameCancellation.Token).SuppressCancellationThrow();
-                string msg = default;
                 if (isCancelled)
                     return;
-                switch (gameState)
-                {
-                    case GameState.Unknown:
-                        break;
-                    case GameState.WaitForNextTurn:
-                        break;
-                    case GameState.TimeOut:
-                        msg = RecordTimeOut(_boardController.GetNextPlayer(), _boardController.GetCurrentPlayer());
-                        await _popup.ShowAndWaitResponse(msg, "New Game", Restart, _gameCancellation.Token);
-                        break;
-                    
-                    case GameState.GameOver:
-                        msg = RecordGameOver(_boardController.GetCurrentPlayer(), _boardController.GetNextPlayer());
-                        await _popup.ShowAndWaitResponse(msg, "New Game", Restart, _gameCancellation.Token);
-                        
-                        break;
-                    
-                    case GameState.Terminated:
-                        await _popup.ShowAndWaitResponse(game_terminated_msg, "New Game", Restart, _gameCancellation.Token);
-                        break;
-                    case GameState.Tie:
-                        msg = RecordDraw(_players);
-                        await _popup.ShowAndWaitResponse(msg, "New Game", Restart, _gameCancellation.Token);
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
             }
+            switch (gameState)
+            {
+                case GameState.Unknown:
+                    break;
+                case GameState.WaitForNextTurn:
+                    break;
+                case GameState.TimeOut:
+                    popupMessage = RecordTimeOut(_boardController.GetNextPlayer(), _boardController.GetCurrentPlayer());
+                    break;
+                    
+                case GameState.GameOver:
+                    popupMessage = RecordGameOver(_boardController.GetCurrentPlayer(), _boardController.GetNextPlayer());
+                    break;
+                    
+                case GameState.Terminated:
+                    popupMessage = game_terminated_msg;
+                    break;
+                    
+                case GameState.Draw:
+                    popupMessage = RecordDraw(_players);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+            await _popup.ShowAndWaitResponse(popupMessage, "New Game", Restart);
         }
 
         private async UniTask<GameState> GameplayCycle(CancellationToken ct)
@@ -109,8 +117,9 @@ namespace TicTacToe.Gameplay
             return state;
         }
 
-        private void Restart()
+        private async void Restart()
         {
+            await UniTask.DelayFrame(1);
             _gameCancellation.Cancel();
             _boardController.Reset();
             _boardController.SwapPlayersTurns();

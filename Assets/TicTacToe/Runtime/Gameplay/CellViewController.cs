@@ -82,7 +82,6 @@ namespace TicTacToe.Gameplay
                 var pointerEventData = await _pointerClickTrigger.OnPointerClickAsync(ct);
                 if (pointerEventData.button is PointerEventData.InputButton.Left)
                 {
-                    Debug.Log($"{_model.Position} clicked");
                     _isHoverable = false;
                     return this;
                 }

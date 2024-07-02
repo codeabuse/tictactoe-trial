@@ -1,9 +1,8 @@
 ﻿using System.Threading;
 using Cysharp.Threading.Tasks;
 using TicTacToe.Gameplay;
-using UnityEngine;
 
-namespace TicTacToe
+namespace TicTacToe.Players
 {
     public interface IPlayerController
     {

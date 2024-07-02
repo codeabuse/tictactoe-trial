@@ -23,10 +23,10 @@ namespace TicTacToe.Gameplay.GameModes
             return new []
             {
                     new PlayerEntity(player1name, _avatars[0], 0,
-                            new HumanPlayer(player1name, 0, _boardController, _popupController)),
+                            new HumanPlayer(player1name, 0, _boardController)),
                     
                     new PlayerEntity(player2name,_avatars[1], 1,
-                            new HumanPlayer(player2name, 1, _boardController, _popupController))
+                            new HumanPlayer(player2name, 1, _boardController))
             };
         }
     }

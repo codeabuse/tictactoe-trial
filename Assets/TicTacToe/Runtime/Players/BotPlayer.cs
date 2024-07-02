@@ -6,6 +6,8 @@ using Cysharp.Threading.Tasks;
 using TicTacToe.Gameplay;
 using TicTacToe.Model;
 using TicTacToe.Networking;
+using TicTacToe.StaticData;
+using TicTacToe.Structures;
 using UnityEngine;
 using UnityEngine.Pool;
 using Random = UnityEngine.Random;
@@ -19,8 +21,10 @@ namespace TicTacToe.Players
         private readonly int _ownFigureId;
         private readonly int _opponentFigureId;
         private readonly HashSet<PotentialMove> _potentialMoves = new();
+        private float _minIdle;
+        private float _maxIdle;
 
-        public BotPlayer(BoardController board, int ownFigureId, int opponentFigureId)
+        public BotPlayer(BoardController board, int ownFigureId, int opponentFigureId, float minIdle, float maxIdle)
         {
             _board = board;
             _ownFigureId = ownFigureId;
@@ -30,17 +34,15 @@ namespace TicTacToe.Players
         public async UniTask<ITurnResult> MakeTurn(CancellationToken ct)
         {
             _board.TurnTimer.Reset();
-            var timeStart = Time.time;
             _board.TurnTimer.StartCountdown(ct).Forget();
+            
             Analyze(_potentialMoves, ct);
             var position = Decise(_potentialMoves);
-            var secondsPassed = Time.time - timeStart;
-            await Idle(secondsPassed, ct);
-            
+            await Idle(ct);
             _board.TurnTimer.StopCountodwn();
-            var turnRequest = GameClient.CreatePlayerMoveRequest();
+            
             var move = new PlayerMove(_ownFigureId, position);
-            return await turnRequest.Send(move).GetResponse();
+            return new TurnSuccesfull(move);
         }
 
         private void Analyze(HashSet<PotentialMove> potentialMoves, CancellationToken ct)
@@ -58,21 +60,21 @@ namespace TicTacToe.Players
                 
                 foreach (var direction in BoardTools.LineDirections)
                 {
-                    var opponentLine = model.GetLineLenght(_opponentFigureId, emptyCell.Position, direction, true);
+                    var opponentLine = model.GetFiguresOnLine(_opponentFigureId, emptyCell.Position, direction, true);
                     longestOpponentLine = Mathf.Max(
                             longestOpponentLine, 
-                            opponentLine.FiguresInLine);
-                    danger += opponentLine.FiguresInLine;
+                            opponentLine.Length);
+                    danger += opponentLine.Length;
 
-                    var ownLine = model.GetLineLenght(_ownFigureId, emptyCell.Position, direction, true);
+                    var ownLine = model.GetFiguresOnLine(_ownFigureId, emptyCell.Position, direction, true);
                     longestOwnLine = Mathf.Max(
                             longestOwnLine,
-                            ownLine.FiguresInLine);
+                            ownLine.Length);
                     
-                    var freeLine = _board.Model.GetLineLenght(Cell.EmptyCellId, emptyCell.Position, direction,
+                    var freeLine = _board.Model.GetFiguresOnLine(Cell.EmptyCellId, emptyCell.Position, direction,
                             false);
-                    if (freeLine.FiguresInLine + ownLine.FiguresInLine >= _rules.WinningLine)
-                        quality += ownLine.FiguresInLine;
+                    if (freeLine.Length + ownLine.Length >= _rules.WinningLine)
+                        quality += ownLine.Length;
                 }
                         
                 potentialMoves.Add(new(emptyCell.Position, longestOpponentLine, longestOwnLine));
@@ -139,11 +141,13 @@ namespace TicTacToe.Players
             return turn;
         }
 
-        private async UniTask Idle(float secondsPassed, CancellationToken ct)
+        private async UniTask Idle(CancellationToken ct)
         {
-            var remainingTime = _rules.TurnTime.TotalSeconds - secondsPassed;
-            var random = Random.Range(.25f, .4f);
-            await UniTask.Delay((int)(remainingTime * random * 1000), cancellationToken: ct); 
+            var remainingTime = (float)_board.TurnTimer.RemainingTime.TotalSeconds;
+            var randomDelay = Random.Range(_minIdle, _maxIdle);
+            var delay = Mathf.Min(remainingTime, randomDelay);
+            Debug.Log($"Bot idle for {delay}");
+            await UniTask.Delay(TimeSpan.FromSeconds(delay), cancellationToken: ct); 
         }
     }
 
