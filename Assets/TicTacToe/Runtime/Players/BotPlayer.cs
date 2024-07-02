@@ -6,8 +6,6 @@ using Cysharp.Threading.Tasks;
 using TicTacToe.Gameplay;
 using TicTacToe.Model;
 using TicTacToe.Networking;
-using TicTacToe.StaticData;
-using TicTacToe.Structures;
 using UnityEngine;
 using UnityEngine.Pool;
 using Random = UnityEngine.Random;
@@ -29,6 +27,8 @@ namespace TicTacToe.Players
             _board = board;
             _ownFigureId = ownFigureId;
             _opponentFigureId = opponentFigureId;
+            _minIdle = minIdle;
+            _maxIdle = maxIdle;
         }
         
         public async UniTask<ITurnResult> MakeTurn(CancellationToken ct)
