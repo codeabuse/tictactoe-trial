@@ -16,5 +16,10 @@ namespace TicTacToe.Networking
         }
 
         public Vector2Int Position => new(CellX, CellY);
+
+        public override string ToString()
+        {
+            return $"{PlayerId}: ({CellX},{CellY})";
+        }
     }
 }

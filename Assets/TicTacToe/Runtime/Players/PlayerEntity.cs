@@ -1,5 +1,8 @@
 ﻿using System.Threading;
 using Cysharp.Threading.Tasks;
+using TicTacToe.Networking;
+using TicTacToe.Players;
+using TicTacToe.Structures;
 using UnityEngine;
 
 namespace TicTacToe.Gameplay
@@ -32,7 +35,7 @@ namespace TicTacToe.Gameplay
             return await _playerController.MakeTurn(ct);
         }
 
-        public void ChangeFigureId(int figureId) => FigureId = figureId;
+        public void SetFigureId(int figureId) => FigureId = figureId;
 
         public void IncrementWins()
         {

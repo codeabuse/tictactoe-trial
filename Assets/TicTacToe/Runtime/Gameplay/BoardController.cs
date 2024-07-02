@@ -7,6 +7,7 @@ using DG.Tweening;
 using TicTacToe.Model;
 using TicTacToe.Networking;
 using TicTacToe.Structures;
+using TicTacToe.UI;
 using UnityEngine;
 
 namespace TicTacToe.Gameplay
@@ -26,8 +27,6 @@ namespace TicTacToe.Gameplay
         private Sprite[] _figures;
         [SerializeField]
         private float _winLineAnimationDuration = 1.5f;
-        [SerializeField]
-        private float _afterWinLineDelay = 2f;
 
         private LineRenderer _lineRenderer;
         
@@ -91,12 +90,13 @@ namespace TicTacToe.Gameplay
             var currentPlayer = NextPlayer();
             ActivePlayerChanged?.Invoke(_currentPlayerId);
             var turnResult = await currentPlayer.WaitForTurn(ct);
-
-            var gameState = turnResult.Evaluate(_boardModel);
+            
+            var gameState = await turnResult.Evaluate(_boardModel);
             if (gameState is GameState.GameOver)
             {
                 await ShowWinningLine(ct);
             }
+
             return gameState;
         }
 
@@ -116,9 +116,10 @@ namespace TicTacToe.Gameplay
                            .SuppressCancellationThrow());
             
             var (_, (_, result)) = await UniTask.WhenAny(waitEmptyCellClickedTasks);
+            if (!result)
+                return default;
+            
             var cell = result.Model;
-            waitCellClickedCancellation.Cancel();
-
             return new PlayerMove(_currentPlayerId, cell.Position);
         }
 
@@ -144,10 +145,8 @@ namespace TicTacToe.Gameplay
         private async UniTask ShowWinningLine(CancellationToken ct)
         {
             var winningLine = _boardModel.WinningLine;
-
             var start = _cellsMap[winningLine.Start].transform.position + zOffset;
             var end = _cellsMap[winningLine.End].transform.position + zOffset;
-            var direction = (winningLine.Start - winningLine.End);
             _lineRenderer.positionCount = 2;
             _lineRenderer.SetPosition(0, start);
             _lineRenderer.SetPosition(1, end);
@@ -163,9 +162,9 @@ namespace TicTacToe.Gameplay
         {
             _currentPlayerId = _currentPlayerId++ % 2;
             var (p1, p2) = (_players[0], _players[1]);
-            var (f1, f2) = (p2.FigureId, p1.FigureId);
-            p1.ChangeFigureId(f1);
-            p2.ChangeFigureId(f2);
+            var (f1, f2) = (p1.FigureId, p2.FigureId);
+            p1.SetFigureId(f2);
+            p2.SetFigureId(f1);
         }
     }
 }

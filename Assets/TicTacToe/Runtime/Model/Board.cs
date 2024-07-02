@@ -97,8 +97,8 @@ namespace TicTacToe.Model
             
             foreach (var lineDirection in BoardTools.LineDirections)
             {
-                var line = GetLineLenght(figureId, startFrom, lineDirection, false);
-                if (line.FiguresInLine == _rules.WinningLine)
+                var line = GetFiguresOnLine(figureId, startFrom, lineDirection, false);
+                if (line.Length == _rules.WinningLine)
                 {
                     winningLine = line;
                     return true;
@@ -108,34 +108,26 @@ namespace TicTacToe.Model
             return false;
         }
 
-        public Line GetLineLenght(int figureId, Vector2Int start, Vector2Int lineDirection, bool excludeStartPoint)
+        public Line GetFiguresOnLine(int figureId, Vector2Int start, Vector2Int lineDirection, bool excludeStartPoint)
         {
             var startPosition = excludeStartPoint? start + lineDirection : start;
-            
-            var lineForward = GetLineLenghtInDirection(figureId, startPosition, lineDirection);
+            Line result = new(figureId);
+            CountFiguresInDirection(startPosition, lineDirection, result);
             var oppositeDirtection = lineDirection * -1;
-            var lineOpposite  = GetLineLenghtInDirection(figureId, start + oppositeDirtection, oppositeDirtection);
+            CountFiguresInDirection(start + oppositeDirtection, oppositeDirtection, result);
 
-            return new Line(
-                    lineForward.End, 
-                    lineOpposite.End, 
-                    lineForward.FiguresInLine + lineOpposite.FiguresInLine);
+            return result;
         }
 
-        private Line GetLineLenghtInDirection(int figureId, Vector2Int startPosition, Vector2Int direction)
+        private void CountFiguresInDirection(Vector2Int startPosition, Vector2Int direction, Line line)
         {
-            var currentPosition = startPosition;
-            var nextPosition = currentPosition;
-            var figuresInDirection = 0;
+            var nextPosition = startPosition;
 
-            while (FigureMatch(nextPosition, figureId))
+            while (FigureMatch(nextPosition, line.FigureId))
             {
-                currentPosition = nextPosition;
-                figuresInDirection++;
+                line.AddCell(nextPosition);
                 nextPosition += direction;
-            } 
-
-            return new (startPosition, currentPosition, figuresInDirection);
+            }
         }
 
         private bool OutOfBounds(Vector2Int position)

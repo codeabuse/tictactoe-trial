@@ -13,10 +13,14 @@ MonoBehaviour:
   m_Name: Client Configuration
   m_EditorClassIdentifier: 
   _clientBackend:
-    rid: 1883868068588552192
+    rid: 1883868095192498176
   references:
     version: 2
     RefIds:
-    - rid: 1883868068588552192
-      type: {class: GameClientMock, ns: TicTacToe.Networking, asm: TicTacToe.Runtime}
-      data: 
+    - rid: 1883868095192498176
+      type: {class: GameClientSimulation, ns: TicTacToe.Networking, asm: TicTacToe.Runtime}
+      data:
+        simulation:
+          _responseTimeout: 3
+          _maxResponseAttempts: 3
+          _timeoutProbability: 1.1
