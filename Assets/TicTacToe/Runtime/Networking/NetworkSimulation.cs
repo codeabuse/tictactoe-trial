@@ -12,7 +12,7 @@ namespace TicTacToe.Networking
     {
         public static readonly TimeSpan DEFAULT_RESPONSE_WAIT_TIME = TimeSpan.FromSeconds(3);
         public const int DEFAULT_RESPONSE_ATTEMPTS = 3;
-        public const float DEFAULT_TIMEOUT_PROBABILITY = 1.1f;
+        public const float DEFAULT_TIMEOUT_PROBABILITY = 0.1f;
         
         [SerializeField]
         private float _responseTimeout = (float)DEFAULT_RESPONSE_WAIT_TIME.TotalSeconds;
@@ -28,7 +28,7 @@ namespace TicTacToe.Networking
         
         public async UniTask SimulateDelay()
         {
-            var randomDelayMax = ResponseTimeout.TotalSeconds * TimeoutProbability;
+            var randomDelayMax = ResponseTimeout.TotalSeconds * (1 + TimeoutProbability);
             var delay = (Random.Range(0, (float)randomDelayMax) > ResponseTimeout.TotalSeconds)
                     ? randomDelayMax
                     : 0.1;
